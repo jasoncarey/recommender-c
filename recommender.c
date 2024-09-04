@@ -34,6 +34,77 @@ typedef struct {
   double rating;
 } ItemRating;
 
+typedef struct {
+  int user_id;
+  int song_id;
+  double rating;
+} Rating;
+
+/**
+ * Loads a CSV file with user, song, and rating data
+ * Returns a Rating array with the data
+ */
+Rating* load_csv_data(const char* filename, int* num_ratings, int* max_user_id, int* max_song_id) {
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        perror("Failed to open file");
+        exit(1);
+    }
+
+    char* line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int user_id, song_id;
+    double rating;
+    int count = 0;
+    int capacity = 1000000;
+    Rating* ratings = malloc(capacity * sizeof(Rating));
+
+    if (!ratings) {
+        perror("Failed to allocate memory for ratings");
+        exit(1);
+    }
+
+    *max_user_id = 0;
+    *max_song_id = 0;
+
+    while ((read = getline(&line, &len, file)) != -1) {
+        if (sscanf(line, "%d,%d,%lf", &user_id, &song_id, &rating) == 3) {
+            if (count >= capacity) {
+                capacity *= 2;
+                Rating* new_ratings = realloc(ratings, capacity * sizeof(Rating));
+                if (!new_ratings) {
+                    free(ratings);
+                    perror("Failed to reallocate memory for ratings");
+                    exit(1);
+                }
+                ratings = new_ratings;
+            }
+
+            ratings[count].user_id = user_id;
+            ratings[count].song_id = song_id;
+            ratings[count].rating = rating;
+
+            if (user_id > *max_user_id) *max_user_id = user_id;
+            if (song_id > *max_song_id) *max_song_id = song_id;
+
+            count++;
+        } else {
+            printf("Skipping invalid line: %s", line);
+        }
+    }
+
+    fclose(file);
+    if (line) {
+        free(line);
+    }
+    *num_ratings = count;
+
+    printf("Loaded %d ratings. Max user ID: %d, Max song ID: %d\n", *num_ratings, *max_user_id, *max_song_id);
+
+    return ratings;
+}
+
 void initialize_matrix_pq(double **matrix, int rows, int cols);
 void initialize_matrix(double **R, double *data, int num_users, int num_items);
 double calculate_sse(double **R, double **P, double **Q, int num_users,
@@ -46,56 +117,81 @@ double predict_rating(double **P, double **Q, int user_id, int item_id,
 double **create_matrix(int rows, int cols);
 void free_matrix(double **matrix, int rows);
 void recommend_items(double** P, double** Q, int user_id, int num_items, int num_factors, int k);
-
+double ** create_sparse_matrix(int num_users, int num_songs);
+void fill_sparse_matrix(double** matrix, Rating* ratings, int num_ratings, int num_users, int num_items);
 int main() {
-  int num_users = 6;
-  int num_items = 6;
+  int num_ratings;
+  int max_user_id, max_song_id;
 
-  // Hyperparameters
-  int num_factors = 5;
-  int epochs = 2000;
-  double learning_rate = 0.001;
-  double lambda = 0.001;  // regularization parameter
+  Rating* ratings = load_csv_data("data/songsDataset.csv", &num_ratings, &max_user_id, &max_song_id);
+
+  int num_users = max_user_id + 1;
+  int num_items = max_song_id + 1;
+
+  printf("num_users: %d, num_items: %d\n", num_users, num_items);
+
+  // // Hyperparameters
+  int num_factors = 10;
+  int epochs = 1;
+  double learning_rate = 0.01;
+  double lambda = 0.1;
 
   double **P = create_matrix(num_users, num_factors);
   double **Q = create_matrix(num_items, num_factors);
-  double **R_train = create_matrix(num_users, num_items);
-  double **R_test = create_matrix(num_users, num_items);
-
   initialize_matrix_pq(P, num_users, num_factors);
   initialize_matrix_pq(Q, num_items, num_factors);
-  initialize_matrix(R_train, (double *)data_train, num_users, num_items);
-  initialize_matrix(R_test, (double *)data_test, num_users, num_items);
 
-  train_model((double **)R_train, P, Q, num_users, num_items, num_factors,
-              epochs, learning_rate, lambda);
+  double** R_train = create_sparse_matrix(num_users, num_items);
+  // fill_sparse_matrix(R_train, ratings, num_ratings, num_users, num_items);
 
-  // for (int i = 0; i < num_users; i++) {
-  //   for (int j = 0; j < num_items; j++) {
-  //     if (R_test[i][j] > 0) {
-  //       double predicted_rating = predict_rating(P, Q, i, j, num_factors);
-  //       printf("\nUser %d, Item %d: Predicted Rating: %1f\n", i, j,
-  //              predicted_rating);
-  //     }
-  //   }
-  // }
+  // train_model((double **)R_train, P, Q, num_users, num_items, num_factors,
+  //             epochs, learning_rate, lambda);
 
-  recommend_items(P, Q, 0, num_items, num_factors, 3);
-  recommend_items(P, Q, 1, num_items, num_factors, 3);
-  recommend_items(P, Q, 2, num_items, num_factors, 3);
-  recommend_items(P, Q, 3, num_items, num_factors, 3);
-  recommend_items(P, Q, 4, num_items, num_factors, 3);
-  recommend_items(P, Q, 5, num_items, num_factors, 3);
 
-  free_matrix(P, num_users);
-  free_matrix(Q, num_items);
-  free_matrix(R_train, num_users);
-  free_matrix(R_test, num_users);
+  // recommend_items(P, Q, 0, num_items, num_factors, 5);
+  // recommend_items(P, Q, 1, num_items, num_factors, 5);
+
+  // free_matrix(P, num_users);
+  // free_matrix(Q, num_items);
+  // free_matrix(R_train, num_users);
 
   return 0;
 }
 
 // Implementation logic
+
+double** create_sparse_matrix(int num_users, int num_items) {
+    double** matrix = (double**)malloc(num_users * sizeof(double*));
+    if (!matrix) {
+        perror("Failed to allocate memory for user rows");
+        exit(1);
+    }
+
+    for (int i = 0; i < num_users; i++) {
+        matrix[i] = (double*)calloc(num_items, sizeof(double));  // calloc to initialize to 0
+        if (!matrix[i]) {
+            perror("Failed to allocate memory for song columns");
+            exit(1);
+        }
+    }
+    return matrix;
+}
+
+void fill_sparse_matrix(double** matrix, Rating* ratings, int num_ratings, int num_users, int num_items) {
+    for (int i = 0; i < num_ratings; i++) {
+        printf("Processing rating %d: user_id=%d, song_id=%d, rating=%f\n", i, ratings[i].user_id, ratings[i].song_id, ratings[i].rating);
+        int user_id = ratings[i].user_id;
+        int song_id = ratings[i].song_id;
+        double rating = ratings[i].rating;
+
+        // Add boundary checks
+        if (user_id >= 0 && user_id < num_users && song_id >= 0 && song_id < num_items) {
+            matrix[user_id][song_id] = rating;
+        } else {
+            printf("Error: user_id %d or song_id %d is out of bounds\n", user_id, song_id);
+        }
+    }
+}
 
 // Initializes a matrix with random small values
 void initialize_matrix_pq(double **matrix, int rows, int cols) {

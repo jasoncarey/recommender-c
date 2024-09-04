@@ -1,2 +1,6 @@
 *.dSYM
 recommender
+.DS_Store
+.vscode
+data/
+dump.txt
