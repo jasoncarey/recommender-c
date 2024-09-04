@@ -74,16 +74,16 @@ void fill_sparse_matrix(SparseMatrix *matrix, Rating *ratings, int num_ratings,
   }
 
   // Print the matrix for the first 3 users
-  printf("R matrix for the first 3 users:\n");
-  for (int i = 0; i < 3; i++) { // First 3 users
-    printf("User %d: ", i + 1);
-    RatingNode *node = matrix->users[i].ratings;
-    while (node) {
-      printf("(%d, %1.2f) ", node->song_id, node->rating);
-      node = node->next;
-    }
-    printf("\n");
-  }
+//   printf("R matrix for the first 3 users:\n");
+//   for (int i = 0; i < 3; i++) { // First 3 users
+//     printf("User %d: ", i + 1);
+//     RatingNode *node = matrix->users[i].ratings;
+//     while (node) {
+//       printf("(%d, %1.2f) ", node->song_id, node->rating);
+//       node = node->next;
+//     }
+//     printf("\n");
+//   }
   printf("\n");
 }
 

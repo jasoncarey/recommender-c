@@ -4,3 +4,4 @@ recommender
 .vscode
 data/
 dump.txt
+*.o
