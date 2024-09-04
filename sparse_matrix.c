@@ -24,7 +24,7 @@ void add_rating(SparseMatrix* matrix, int user_id, int song_id, double rating) {
 
 double get_rating(SparseMatrix* matrix, int user_id, int song_id) {
     if (user_id >= matrix->num_users) {
-        return 0.0; // Out of bounds, assume no rating
+        return 0.0; // Out of bounds
     }
     RatingNode* node = matrix->users[user_id].ratings;
     while (node) {
@@ -33,7 +33,7 @@ double get_rating(SparseMatrix* matrix, int user_id, int song_id) {
         }
         node = node->next;
     }
-    return 0.0; // No rating found
+    return 0.0;
 }
 
 void free_sparse_matrix(SparseMatrix* matrix) {
@@ -61,12 +61,6 @@ void fill_sparse_matrix(SparseMatrix* matrix, Rating* ratings, int num_ratings, 
         int song_id = ratings[i].song_id;
         double rating = ratings[i].rating;
 
-        // Debugging: Print the current indices
-        // if (i < 10 || i % 100000 == 0) { // Print first few and then every 100,000 ratings
-        //     printf("Processing rating %d: user_id=%d, song_id=%d, rating=%f\n", i, user_id, song_id, rating);
-        // }
-
-        // Ensure indices are within bounds
         if (user_id >= 0 && user_id < num_users && song_id >= 0 && song_id < num_items) {
             add_rating(matrix, user_id, song_id, rating);
         } else {
