@@ -100,7 +100,7 @@ Rating* load_csv_data(const char* filename, int* num_ratings, int* max_user_id, 
     }
     *num_ratings = count;
 
-    printf("Loaded %d ratings. Max user ID: %d, Max song ID: %d\n", *num_ratings, *max_user_id, *max_song_id);
+    printf("Loaded %d ratings. Max user ID: %d, Max song ID: %d\n\n", *num_ratings, *max_user_id, *max_song_id);
 
     return ratings;
 }

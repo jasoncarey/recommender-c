@@ -31,7 +31,9 @@ int main() {
     double learning_rate = 0.008;
     double lambda = 0.3;
 
-    printf("Running with %d factors, %d epochs, %f learning rate, %f lambda\n", num_factors, epochs, learning_rate, lambda);
+    printf("-------------------------------\n");
+    printf("Running with:\n %d factors\n %d epochs\n %f learning rate\n %f lambda\n", num_factors, epochs, learning_rate, lambda);
+    printf("-------------------------------\n\n");
 
     double **P = create_matrix(num_users, num_factors);
     double **Q = create_matrix(max_song_id + 1, num_factors);

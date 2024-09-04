@@ -212,6 +212,7 @@ void train_model(SparseMatrix *R, double **P, double **Q, int num_users,
     {
         printf("Weight for rating %d: %f\n", i, weights[i]);
     }
+    printf("\n");
     for (int epoch = 0; epoch < epochs; epoch++)
     {
         for (int i = 0; i < num_users; i++)
