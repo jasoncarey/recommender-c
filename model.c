@@ -266,8 +266,6 @@ double predict_rating(double **P, double **Q, int user_id, int item_id,
     {
         prediction += P[user_id][k] * Q[item_id][k];
     }
-    // if (prediction > 5.0) prediction = 5.0;
-    // if (prediction < 1.0) prediction = 1.0;
     return prediction;
 }
 
@@ -278,6 +276,9 @@ void recommend_items(double **P, double **Q, int user_id, int num_items, int num
     {
         double normalized_pred = predict_rating(P, Q, user_id, item_id, num_factors);
         double final_pred = denormalize_prediction(normalized_pred, mean, stddev);
+
+        if (final_pred < 1.0) final_pred = 1.0;
+        if (final_pred > 5.0) final_pred = 5.0;
 
         items[item_id].item_id = item_id;
         items[item_id].rating = final_pred;
