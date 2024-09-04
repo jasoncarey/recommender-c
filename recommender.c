@@ -2,14 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-double data_train[6][6] = {
-    {5, 3, 0, 1, 4, 0},
-    {4, 0, 0, 1, 0, 2},
-    {1, 1, 0, 0, 0, 5},
-    {1, 0, 0, 4, 4, 0},
-    {0, 1, 5, 4, 0, 0},
-    {0, 0, 0, 0, 3, 4}
-};
+double data_train[6][6] = {{5, 3, 0, 1, 4, 0}, {4, 0, 0, 1, 0, 2},
+                           {1, 1, 0, 0, 0, 5}, {1, 0, 0, 4, 4, 0},
+                           {0, 1, 5, 4, 0, 0}, {0, 0, 0, 0, 3, 4}};
 
 // double data_test[6][6] = {
 //     {0, 0, 0, 0, 0, 0}, // Predict missing ratings for User 1
@@ -44,65 +39,69 @@ typedef struct {
  * Loads a CSV file with user, song, and rating data
  * Returns a Rating array with the data
  */
-Rating* load_csv_data(const char* filename, int* num_ratings, int* max_user_id, int* max_song_id) {
-    FILE* file = fopen(filename, "r");
-    if (!file) {
-        perror("Failed to open file");
-        exit(1);
-    }
+Rating *load_csv_data(const char *filename, int *num_ratings, int *max_user_id,
+                      int *max_song_id) {
+  FILE *file = fopen(filename, "r");
+  if (!file) {
+    perror("Failed to open file");
+    exit(1);
+  }
 
-    char* line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    int user_id, song_id;
-    double rating;
-    int count = 0;
-    int capacity = 1000000;
-    Rating* ratings = malloc(capacity * sizeof(Rating));
+  char *line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  int user_id, song_id;
+  double rating;
+  int count = 0;
+  int capacity = 1000000;
+  Rating *ratings = malloc(capacity * sizeof(Rating));
 
-    if (!ratings) {
-        perror("Failed to allocate memory for ratings");
-        exit(1);
-    }
+  if (!ratings) {
+    perror("Failed to allocate memory for ratings");
+    exit(1);
+  }
 
-    *max_user_id = 0;
-    *max_song_id = 0;
+  *max_user_id = 0;
+  *max_song_id = 0;
 
-    while ((read = getline(&line, &len, file)) != -1) {
-        if (sscanf(line, "%d,%d,%lf", &user_id, &song_id, &rating) == 3) {
-            if (count >= capacity) {
-                capacity *= 2;
-                Rating* new_ratings = realloc(ratings, capacity * sizeof(Rating));
-                if (!new_ratings) {
-                    free(ratings);
-                    perror("Failed to reallocate memory for ratings");
-                    exit(1);
-                }
-                ratings = new_ratings;
-            }
-
-            ratings[count].user_id = user_id;
-            ratings[count].song_id = song_id;
-            ratings[count].rating = rating;
-
-            if (user_id > *max_user_id) *max_user_id = user_id;
-            if (song_id > *max_song_id) *max_song_id = song_id;
-
-            count++;
-        } else {
-            printf("Skipping invalid line: %s", line);
+  while ((read = getline(&line, &len, file)) != -1) {
+    if (sscanf(line, "%d,%d,%lf", &user_id, &song_id, &rating) == 3) {
+      if (count >= capacity) {
+        capacity *= 2;
+        Rating *new_ratings = realloc(ratings, capacity * sizeof(Rating));
+        if (!new_ratings) {
+          free(ratings);
+          perror("Failed to reallocate memory for ratings");
+          exit(1);
         }
+        ratings = new_ratings;
+      }
+
+      ratings[count].user_id = user_id;
+      ratings[count].song_id = song_id;
+      ratings[count].rating = rating;
+
+      if (user_id > *max_user_id)
+        *max_user_id = user_id;
+      if (song_id > *max_song_id)
+        *max_song_id = song_id;
+
+      count++;
+    } else {
+      printf("Skipping invalid line: %s", line);
     }
+  }
 
-    fclose(file);
-    if (line) {
-        free(line);
-    }
-    *num_ratings = count;
+  fclose(file);
+  if (line) {
+    free(line);
+  }
+  *num_ratings = count;
 
-    printf("Loaded %d ratings. Max user ID: %d, Max song ID: %d\n\n", *num_ratings, *max_user_id, *max_song_id);
+  printf("Loaded %d ratings. Max user ID: %d, Max song ID: %d\n\n",
+         *num_ratings, *max_user_id, *max_song_id);
 
-    return ratings;
+  return ratings;
 }
 
 void initialize_matrix_pq(double **matrix, int rows, int cols);
@@ -116,14 +115,17 @@ double predict_rating(double **P, double **Q, int user_id, int item_id,
                       int num_factors);
 double **create_matrix(int rows, int cols);
 void free_matrix(double **matrix, int rows);
-void recommend_items(double** P, double** Q, int user_id, int num_items, int num_factors, int k);
-double ** create_sparse_matrix(int num_users, int num_songs);
-void fill_sparse_matrix(double** matrix, Rating* ratings, int num_ratings, int num_users, int num_items);
+void recommend_items(double **P, double **Q, int user_id, int num_items,
+                     int num_factors, int k);
+double **create_sparse_matrix(int num_users, int num_songs);
+void fill_sparse_matrix(double **matrix, Rating *ratings, int num_ratings,
+                        int num_users, int num_items);
 int main() {
   int num_ratings;
   int max_user_id, max_song_id;
 
-  Rating* ratings = load_csv_data("data/songsDataset.csv", &num_ratings, &max_user_id, &max_song_id);
+  Rating *ratings = load_csv_data("data/songsDataset.csv", &num_ratings,
+                                  &max_user_id, &max_song_id);
 
   int num_users = max_user_id + 1;
   int num_items = max_song_id + 1;
@@ -141,12 +143,11 @@ int main() {
   initialize_matrix_pq(P, num_users, num_factors);
   initialize_matrix_pq(Q, num_items, num_factors);
 
-  double** R_train = create_sparse_matrix(num_users, num_items);
+  double **R_train = create_sparse_matrix(num_users, num_items);
   // fill_sparse_matrix(R_train, ratings, num_ratings, num_users, num_items);
 
   // train_model((double **)R_train, P, Q, num_users, num_items, num_factors,
   //             epochs, learning_rate, lambda);
-
 
   // recommend_items(P, Q, 0, num_items, num_factors, 5);
   // recommend_items(P, Q, 1, num_items, num_factors, 5);
@@ -160,37 +161,42 @@ int main() {
 
 // Implementation logic
 
-double** create_sparse_matrix(int num_users, int num_items) {
-    double** matrix = (double**)malloc(num_users * sizeof(double*));
-    if (!matrix) {
-        perror("Failed to allocate memory for user rows");
-        exit(1);
-    }
+double **create_sparse_matrix(int num_users, int num_items) {
+  double **matrix = (double **)malloc(num_users * sizeof(double *));
+  if (!matrix) {
+    perror("Failed to allocate memory for user rows");
+    exit(1);
+  }
 
-    for (int i = 0; i < num_users; i++) {
-        matrix[i] = (double*)calloc(num_items, sizeof(double));  // calloc to initialize to 0
-        if (!matrix[i]) {
-            perror("Failed to allocate memory for song columns");
-            exit(1);
-        }
+  for (int i = 0; i < num_users; i++) {
+    matrix[i] = (double *)calloc(num_items,
+                                 sizeof(double)); // calloc to initialize to 0
+    if (!matrix[i]) {
+      perror("Failed to allocate memory for song columns");
+      exit(1);
     }
-    return matrix;
+  }
+  return matrix;
 }
 
-void fill_sparse_matrix(double** matrix, Rating* ratings, int num_ratings, int num_users, int num_items) {
-    for (int i = 0; i < num_ratings; i++) {
-        printf("Processing rating %d: user_id=%d, song_id=%d, rating=%f\n", i, ratings[i].user_id, ratings[i].song_id, ratings[i].rating);
-        int user_id = ratings[i].user_id;
-        int song_id = ratings[i].song_id;
-        double rating = ratings[i].rating;
+void fill_sparse_matrix(double **matrix, Rating *ratings, int num_ratings,
+                        int num_users, int num_items) {
+  for (int i = 0; i < num_ratings; i++) {
+    printf("Processing rating %d: user_id=%d, song_id=%d, rating=%f\n", i,
+           ratings[i].user_id, ratings[i].song_id, ratings[i].rating);
+    int user_id = ratings[i].user_id;
+    int song_id = ratings[i].song_id;
+    double rating = ratings[i].rating;
 
-        // Add boundary checks
-        if (user_id >= 0 && user_id < num_users && song_id >= 0 && song_id < num_items) {
-            matrix[user_id][song_id] = rating;
-        } else {
-            printf("Error: user_id %d or song_id %d is out of bounds\n", user_id, song_id);
-        }
+    // Add boundary checks
+    if (user_id >= 0 && user_id < num_users && song_id >= 0 &&
+        song_id < num_items) {
+      matrix[user_id][song_id] = rating;
+    } else {
+      printf("Error: user_id %d or song_id %d is out of bounds\n", user_id,
+             song_id);
     }
+  }
 }
 
 // Initializes a matrix with random small values
@@ -203,11 +209,11 @@ void initialize_matrix_pq(double **matrix, int rows, int cols) {
 }
 
 void initialize_matrix(double **R, double *data, int num_users, int num_items) {
-    for (int i = 0; i < num_users; i++) {
-        for (int j = 0; j < num_items; j++) {
-            R[i][j] = data[i * num_items + j];
-        }
+  for (int i = 0; i < num_users; i++) {
+    for (int j = 0; j < num_items; j++) {
+      R[i][j] = data[i * num_items + j];
     }
+  }
 }
 
 /**
@@ -296,26 +302,28 @@ double predict_rating(double **P, double **Q, int user_id, int item_id,
  * Compares two items based on their ratings, used for quicksort
  */
 int compare_items(const void *a, const void *b) {
-    double diff = ((ItemRating *)b)->rating - ((ItemRating *)a)->rating;
-    return (diff > 0) - (diff < 0);  // Returns -1 if b > a, 1 if a > b, 0 if equal
+  double diff = ((ItemRating *)b)->rating - ((ItemRating *)a)->rating;
+  return (diff > 0) - (diff < 0); // Returns -1 if b > a, 1 if a > b, 0 if equal
 }
 
-void recommend_items(double** P, double** Q, int user_id, int num_items, int num_factors, int k) {
-    ItemRating* items = malloc(num_items * sizeof(ItemRating));
+void recommend_items(double **P, double **Q, int user_id, int num_items,
+                     int num_factors, int k) {
+  ItemRating *items = malloc(num_items * sizeof(ItemRating));
 
-    for (int item_id = 0; item_id < num_items; item_id++) {
-        items[item_id].item_id = item_id;
-        items[item_id].rating = predict_rating(P, Q, user_id, item_id, num_factors);
-    }
+  for (int item_id = 0; item_id < num_items; item_id++) {
+    items[item_id].item_id = item_id;
+    items[item_id].rating = predict_rating(P, Q, user_id, item_id, num_factors);
+  }
 
-    qsort(items, num_items, sizeof(ItemRating), compare_items);
+  qsort(items, num_items, sizeof(ItemRating), compare_items);
 
-    printf("\nTop %d items for user %d:\n", k, user_id + 1);
-    for (int i = 0; i < k; i++) {
-        printf("Item %d with predicted rating %1f\n", items[i].item_id + 1, items[i].rating);
-    }
+  printf("\nTop %d items for user %d:\n", k, user_id + 1);
+  for (int i = 0; i < k; i++) {
+    printf("Item %d with predicted rating %1f\n", items[i].item_id + 1,
+           items[i].rating);
+  }
 
-    free(items);
+  free(items);
 }
 
 double **create_matrix(int rows, int cols) {
